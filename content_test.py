@@ -189,7 +189,7 @@ if __name__ == "__main__":
     # 使用 with sync_playwright() as p: 來確保資源自動關閉
     with sync_playwright() as p:
         # 設定要處理的看板
-        board_names = ["HatePolitics"]
+        board_names = ["sex", "Baseball", "Gossiping", "Stock", "HatePolitics", "NBA", "C_Chat"]
 
         for board_name in board_names:
             json_file_path = f'moptt_{board_name}.json'

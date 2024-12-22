@@ -79,6 +79,7 @@ class MopttScraper:
         total_new_posts = 0
         page_count = 0
         current_number = len(self.all_posts) + 1  # 從現有文章數量開始編號
+        consecutive_2023_count = 0  # 追蹤連續2023年的文章數量
 
         while True:
             page_count += 1
@@ -93,10 +94,14 @@ class MopttScraper:
                 # 檢查時間戳記是否為2023年
                 timestamp = post.get('timestamp', '')
                 if timestamp.startswith('2023'):
-                    print("\n遇到2023年的文章，停止爬取")
-                    self.all_posts.extend(new_posts)
-                    self.save_posts_to_json()
-                    return self.all_posts
+                    consecutive_2023_count += 1
+                    if consecutive_2023_count >= 5:
+                        print("\n已找到連續5篇2023年的文章，停止爬取")
+                        self.all_posts.extend(new_posts)
+                        self.save_posts_to_json()
+                        return self.all_posts
+                else:
+                    consecutive_2023_count = 0  # 重置計數器
 
                 if post['_id'] not in existing_ids:
                     post['number'] = current_number  # 添加編號
@@ -126,7 +131,8 @@ class MopttScraper:
 
 if __name__ == "__main__":
     # 可以設定要爬取的看板名稱
-    BOARD_NAMES = ["HatePolitics"]
+    BOARD_NAMES = ["sex", "Baseball", "Gossiping", "Stock", "HatePolitics", "NBA", "C_Chat"]
+
     
     for board in BOARD_NAMES:
         print(f"\n開始爬取 {board} 看板")

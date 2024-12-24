@@ -89,14 +89,22 @@ class MopttScraper:
                 break
 
             new_posts = []
+            dec_2023_count = sum(1 for post in self.all_posts if post.get('timestamp', '').startswith('2023-12'))
+            
             for post in data['posts']:
-                # 檢查時間戳記是否為2023年
+                # 檢查是否已經找到足夠的2023年12月文章
                 timestamp = post.get('timestamp', '')
-                if timestamp.startswith('2023'):
-                    print("\n遇到2023年的文章，停止爬取")
-                    self.all_posts.extend(new_posts)
-                    self.save_posts_to_json()
-                    return self.all_posts
+                if timestamp.startswith('2023-12'):
+                    dec_2023_count += 1
+                    if dec_2023_count >= 5:
+                        print("\n已找到5篇2023年12月的文章，停止爬取")
+                        if post['_id'] not in existing_ids:
+                            post['number'] = current_number
+                            current_number += 1
+                            new_posts.append(post)
+                        self.all_posts.extend(new_posts)
+                        self.save_posts_to_json()
+                        return self.all_posts
 
                 if post['_id'] not in existing_ids:
                     post['number'] = current_number  # 添加編號
@@ -111,7 +119,7 @@ class MopttScraper:
             # 檢查是否有下一頁
             if 'nextPage' in data and 'skip' in data['nextPage']:
                 page_param = json.dumps({"skip": data['nextPage']['skip']})
-                time.sleep(0.5)  # 避免請求過於頻繁
+                # time.sleep(0.5)  # 避免請求過於頻繁
             else:
                 break
 
@@ -126,7 +134,7 @@ class MopttScraper:
 
 if __name__ == "__main__":
     # 可以設定要爬取的看板名稱
-    BOARD_NAMES = ["HatePolitics"]
+    BOARD_NAMES = ["LoL"]
     
     for board in BOARD_NAMES:
         print(f"\n開始爬取 {board} 看板")

@@ -17,8 +17,8 @@ def clean_text(text):
     text = text.replace(',', '；')
     return text
 
-def convert_to_simple_csv(input_file, output_file=None):
-    """將 JSON 資料轉換為簡單的 CSV 格式，每則留言一行"""
+def convert_to_simple_csv(input_file, output_file=None, max_chars_per_cell=32000):
+    """將 JSON 資料轉換為簡單的 CSV 格式，留言整合在同一個欄位中"""
     try:
         # 讀取 JSON 檔案
         with open(input_file, 'r', encoding='utf-8') as f:
@@ -29,8 +29,11 @@ def convert_to_simple_csv(input_file, output_file=None):
             output_file = input_file.replace('.json', '_simple.csv')
         
         # 定義欄位
-        fields = ['id', 'title', 'time', 'views', 'comments', 'likes', 'dislikes', 
-                 'neutral', 'content', 'comment_number', 'comment_type', 'comment_text']
+        base_fields = ['id', 'title', 'time', 'views', 'total_comments', 'likes', 'dislikes', 
+                      'neutral', 'content', 'content_overflow']
+        # 主要留言欄位和一個溢出欄位
+        comment_fields = ['comments', 'comments_overflow']
+        fields = base_fields + comment_fields
         
         # 寫入 CSV
         with open(output_file, 'w', newline='', encoding='utf-8') as f:
@@ -48,44 +51,67 @@ def convert_to_simple_csv(input_file, output_file=None):
                 except:
                     time_str = ''
                 
-                # 處理文章內容
-                content = clean_text(item.get('description', ''))
+                # 處理文章內容，包含溢出處理
+                full_content = clean_text(item.get('description', ''))
+                if len(full_content) > max_chars_per_cell:
+                    content = full_content[:max_chars_per_cell]
+                    content_overflow = full_content[max_chars_per_cell:]
+                else:
+                    content = full_content
+                    content_overflow = ''
                 
                 # 基本資料
-                base_row = {
+                row = {
                     'id': item.get('id', ''),
                     'title': clean_text(item.get('title', '')),
                     'time': time_str,
                     'views': str(item.get('hits', 0)),
-                    'comments': str(comments_data.get('total_comments', 0)),
+                    'total_comments': str(comments_data.get('total_comments', 0)),
                     'likes': str(comments_data.get('like_count', 0)),
                     'dislikes': str(comments_data.get('dislike_count', 0)),
                     'neutral': str(comments_data.get('neutral_count', 0)),
-                    'content': content
+                    'content': content,
+                    'content_overflow': content_overflow,
+                    'comments': '',
+                    'comments_overflow': ''
                 }
                 
                 # 處理留言
                 comments = comments_data.get('comments', [])
-                if not comments:
-                    # 如果沒有留言，寫入一行基本資料
-                    base_row.update({
-                        'comment_number': '0',
-                        'comment_type': '',
-                        'comment_text': ''
-                    })
-                    writer.writerow(base_row)
-                else:
-                    # 為每則留言寫入一行
-                    for i, comment in enumerate(comments, 1):
+                if comments:
+                    # 將所有有效留言組合成一個列表
+                    valid_comments = []
+                    for comment in comments:
                         text = clean_text(comment.get('content', ''))
                         if text and not text.startswith('http'):  # 排除圖片連結
-                            row = base_row.copy()
-                            row.update({
-                                'comment_number': str(i),
-                                'comment_type': comment.get('type', ''),  # 推/噓/→
-                                'comment_text': text
-                            })
-                            writer.writerow(row)
+                            comment_str = f"{comment.get('type', '')} {text}"
+                            valid_comments.append(comment_str)
+                    
+                    # 將留言組合並分配到適當的欄位
+                    if valid_comments:
+                        current_cell = []
+                        current_cell_length = 0
+                        overflow_cell = []
+                        
+                        for comment in valid_comments:
+                            comment_length = len(comment) + 1  # +1 for newline
+                            
+                            # 如果當前留言會導致超出限制，將後續留言放入溢出欄位
+                            if current_cell_length + comment_length > max_chars_per_cell:
+                                overflow_cell.append(comment)
+                            else:
+                                current_cell.append(comment)
+                                current_cell_length += comment_length
+                        
+                        # 寫入主要留言欄位
+                        if current_cell:
+                            row['comments'] = '\n'.join(current_cell)
+                        
+                        # 寫入溢出留言欄位
+                        if overflow_cell:
+                            row['comments_overflow'] = '\n'.join(overflow_cell)
+                
+                writer.writerow(row)
         
         print(f"\n成功將 {input_file} 轉換為 {output_file}")
         print(f"\n欄位資訊：")
@@ -93,14 +119,14 @@ def convert_to_simple_csv(input_file, output_file=None):
         print("- title: 標題")
         print("- time: 發文時間")
         print("- views: 觀看次數")
-        print("- comments: 總留言數")
+        print("- total_comments: 總留言數")
         print("- likes: 推文數")
         print("- dislikes: 噓文數")
         print("- neutral: 中立數")
         print("- content: 文章內容")
-        print("- comment_number: 留言編號")
-        print("- comment_type: 留言類型（推/噓/→）")
-        print("- comment_text: 留言內容")
+        print("- content_overflow: 溢出的文章內容")
+        print("- comments: 主要留言內容")
+        print("- comments_overflow: 溢出的留言內容")
         
         return True
         

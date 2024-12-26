@@ -92,26 +92,29 @@ class MopttScraper:
             dec_2023_count = sum(1 for post in self.all_posts if post.get('timestamp', '').startswith('2023-12'))
             
             for post in data['posts']:
-                # 檢查是否已達到12月文章數量限制
-                if dec_2023_count >= 100:
-                    print("\n已達到12月文章數量限制，停止爬取")
-                    self.all_posts.extend(new_posts)
-                    self.save_posts_to_json()
-                    return self.all_posts
+                # 檢查是否已經找到足夠的2023年12月文章
+                timestamp = post.get('timestamp', '')
+                if timestamp.startswith('2023-12'):
+                    dec_2023_count += 1
+                    if dec_2023_count >= 5:
+                        print("\n已找到5篇2023年12月的文章，停止爬取")
+                        if post['_id'] not in existing_ids:
+                            post['number'] = current_number
+                            current_number += 1
+                            new_posts.append(post)
+                        self.all_posts.extend(new_posts)
+                        self.save_posts_to_json()
+                        return self.all_posts
 
                 if post['_id'] not in existing_ids:
                     post['number'] = current_number  # 添加編號
-                    new_posts.append(post)
                     current_number += 1
+                    new_posts.append(post)
                     existing_ids.add(post['_id'])
 
-                    # 如果是12月文章，增加計數
-                    if post.get('timestamp', '').startswith('2023-12'):
-                        dec_2023_count += 1
-                        if dec_2023_count >= 100:
-                            self.all_posts.extend(new_posts)
-                            self.save_posts_to_json()
-                            return self.all_posts
+            if new_posts:
+                self.all_posts.extend(new_posts)
+                total_new_posts += len(new_posts)
 
             # 檢查是否有下一頁
             if 'nextPage' in data and 'skip' in data['nextPage']:

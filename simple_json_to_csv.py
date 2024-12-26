@@ -4,6 +4,7 @@ import sys
 from datetime import datetime
 from dateutil import parser
 import glob
+import os
 
 def clean_text(text):
     """清理文字，移除可能造成 CSV 格式問題的字元"""
@@ -134,6 +135,20 @@ def convert_to_simple_csv(input_file, output_file=None, max_chars_per_cell=32000
         print(f"錯誤：{str(e)}")
         return False
 
+def convert_all_json_files(max_chars_per_cell=32000):
+    """轉換目錄下所有的 JSON 檔案為 CSV 格式"""
+    json_files = glob.glob('*.json')
+    if not json_files:
+        print("找不到任何 JSON 檔案")
+        return
+    
+    for json_file in json_files:
+        output_file = json_file.replace('.json', '_simple.csv')
+        print(f"正在轉換 {json_file} 到 {output_file}")
+        convert_to_simple_csv(json_file, output_file, max_chars_per_cell)
+    
+    print(f"完成轉換 {len(json_files)} 個檔案")
+
 def list_json_files():
     """列出當前目錄下所有的 JSON 檔案"""
     json_files = glob.glob("*.json")
@@ -158,21 +173,27 @@ def list_json_files():
             print("請輸入有效的數字")
 
 def main():
-    # 如果提供命令列參數，直接使用
-    if len(sys.argv) > 1:
+    """主程式"""
+    if len(sys.argv) < 2:
+        print("使用方式：")
+        print("1. 轉換單一檔案：python simple_json_to_csv.py <json檔案>")
+        print("2. 轉換所有JSON檔案：python simple_json_to_csv.py --all")
+        print("\n可用的JSON檔案：")
+        list_json_files()
+        return
+
+    if sys.argv[1] == '--all':
+        convert_all_json_files()
+    else:
         input_file = sys.argv[1]
-        output_file = sys.argv[2] if len(sys.argv) > 2 else None
-    else:
-        # 否則進入互動模式
-        input_file = list_json_files()
-        if input_file is None:
+        if not input_file.endswith('.json'):
+            print("錯誤：請指定 JSON 檔案")
             return
-        output_file = None
-    
-    if convert_to_simple_csv(input_file, output_file):
-        print("\n轉換完成！")
-    else:
-        print("\n轉換失敗！")
+        if not os.path.exists(input_file):
+            print(f"錯誤：找不到檔案 {input_file}")
+            return
+        
+        convert_to_simple_csv(input_file)
 
 if __name__ == "__main__":
     main()

@@ -154,7 +154,7 @@ class CommentScraper:
 
 if __name__ == "__main__":
     # 設定要處理的看板
-    BOARD_NAMES = ["LoL"]
+    BOARD_NAMES = ["Stock", "sex", "NBA", "Gossiping", "Japandrama", "MakeUp", "marvel"]
     
     # 處理每個看板
     for board_name in BOARD_NAMES:

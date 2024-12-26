@@ -134,7 +134,7 @@ class MopttScraper:
 
 if __name__ == "__main__":
     # 可以設定要爬取的看板名稱
-    BOARD_NAMES = ["LoL"]
+    BOARD_NAMES = ["HatePolitics", "Beauty", "Lifeismoney", "KoreaStar", "Japandrama", "MakeUp", "marvel"]
     
     for board in BOARD_NAMES:
         print(f"\n開始爬取 {board} 看板")

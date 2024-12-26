@@ -11,7 +11,7 @@ from playwright.sync_api import sync_playwright, TimeoutError, Error
 
 # ====== 設定區域開始 ======
 # 等待時間設定（秒）
-WAIT_TIME = 0.5
+WAIT_TIME = 0.1
 MAX_RETRY = 3
 # ====== 設定區域結束 ======
 
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     # 使用 with sync_playwright() as p: 來確保資源自動關閉
     with sync_playwright() as p:
         # 設定要處理的看板
-        board_names = ["HatePolitics"]
+        board_names = ["HatePolitics", "Beauty", "Lifeismoney", "KoreaStar", "Japandrama", "MakeUp", "marvel"]
 
         for board_name in board_names:
             json_file_path = f'moptt_{board_name}.json'

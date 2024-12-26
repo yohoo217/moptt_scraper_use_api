@@ -8,3 +8,11 @@ venv/
 .env
 *.log
 .DS_Store
+
+# Data files
+*.csv
+moptt_*.json
+
+# Credentials
+token.pickle
+credentials.json

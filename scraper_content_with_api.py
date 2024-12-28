@@ -1,3 +1,13 @@
+# 可配置的設定
+BOARD_NAMES = ["HatePolitics"]
+# BOARD_NAMES = ["HatePolitics", "Beauty", "Lifeismoney", "KoreaStar", "Japandrama", "MakeUp", "marvel"]
+API_KEY = 'cMIS1Icr95gnR2U19hxO2K7r6mYQ96vp'  # API金鑰
+
+BASE_URL = "https://moptt.tw/ptt/"
+MAX_RETRIES = 3  # 最大重試次數
+RETRY_DELAY = 1  # 重試延遲秒數
+REQUEST_TIMEOUT = 3  # 請求超時秒數
+
 import requests
 import json
 import re
@@ -11,14 +21,14 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class CommentScraper:
     def __init__(self, board_name):
-        self.base_url = "https://moptt.tw/ptt/"
+        self.base_url = BASE_URL
         self.headers = {
-            'Authorization': 'cMIS1Icr95gnR2U19hxO2K7r6mYQ96vp'
+            'Authorization': API_KEY
         }
         self.board_name = board_name
         self.input_file = f"moptt_{board_name}.json"
-        self.max_retries = 3
-        self.retry_delay = 1
+        self.max_retries = MAX_RETRIES
+        self.retry_delay = RETRY_DELAY
 
     def convert_url_to_api_endpoint(self, ptt_url):
         """將PTT URL轉換為API端點"""
@@ -40,7 +50,7 @@ class CommentScraper:
         while retries < self.max_retries:
             try:
                 # 設定3秒超時，關閉SSL驗證
-                response = requests.get(api_url, headers=self.headers, timeout=3, verify=False)
+                response = requests.get(api_url, headers=self.headers, timeout=REQUEST_TIMEOUT, verify=False)
                 response.raise_for_status()
                 data = response.json()
                 
@@ -56,6 +66,7 @@ class CommentScraper:
                     'like_count': comments.get('like', 0),
                     'dislike_count': comments.get('dislike', 0),
                     'neutral_count': comments.get('neutral', 0),
+                    'content': data.get('content', ''),  # 添加文章內容
                     'comments': []
                 }
                 
@@ -74,7 +85,7 @@ class CommentScraper:
                 title = article_info.get('title', '無標題') if article_info else '無標題'
                 print(f"\n跳過文章：{title}")
                 print(f"文章網址：{article_info.get('url', 'N/A') if article_info else 'N/A'}")
-                print(f"原因：請求超時（超過3秒）")
+                print(f"原因：請求超時（超過{REQUEST_TIMEOUT}秒）")
                 return None
             except requests.HTTPError as e:
                 title = article_info.get('title', '無標題') if article_info else '無標題'
@@ -154,9 +165,6 @@ class CommentScraper:
 
 if __name__ == "__main__":
     # 設定要處理的看板
-    BOARD_NAMES = ["Stock", "sex", "NBA", "Gossiping", "Japandrama", "MakeUp", "marvel"]
-    
-    # 處理每個看板
-    for board_name in BOARD_NAMES:
-        scraper = CommentScraper(board_name)
+    for board in BOARD_NAMES:
+        scraper = CommentScraper(board)
         scraper.process_urls_from_file()

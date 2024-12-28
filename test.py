@@ -1,3 +1,9 @@
+# 可配置的設定
+# BOARD_NAMES = ["HatePolitics"]
+BOARD_NAMES = ["HatePolitics", "Beauty", "Lifeismoney", "KoreaStar", "Japandrama", "MakeUp", "marvel"]
+API_KEY = 'cMIS1Icr95gnR2U19hxO2K7r6mYQ96vp'
+BASE_URL = "https://moptt.azurewebsites.net/api/v2/hotpost"
+
 import requests
 import json
 import time
@@ -6,12 +12,12 @@ from urllib.parse import quote
 
 class MopttScraper:
     def __init__(self, board_name):
-        self.base_url = "https://moptt.azurewebsites.net/api/v2/hotpost"
+        self.base_url = BASE_URL
         self.board_name = board_name
         self.all_posts = []
         self.json_file = f"moptt_{board_name}.json"
         self.headers = {
-            'Authorization': 'cMIS1Icr95gnR2U19hxO2K7r6mYQ96vp'
+            'Authorization': API_KEY
         }
 
     def load_existing_posts(self):
@@ -55,8 +61,7 @@ class MopttScraper:
                         'timestamp': post['timestamp'],
                         'url': post['url'],
                         'hits': post['hits'],
-                        'acceptedDate': post['acceptedDate'],
-                        'description': post['description']
+                        'acceptedDate': post['acceptedDate']
                     }
                     # 如果有編號，也保留下來
                     if 'number' in post:
@@ -134,8 +139,6 @@ class MopttScraper:
 
 if __name__ == "__main__":
     # 可以設定要爬取的看板名稱
-    BOARD_NAMES = ["HatePolitics", "Beauty", "Lifeismoney", "KoreaStar", "Japandrama", "MakeUp", "marvel"]
-    
     for board in BOARD_NAMES:
         print(f"\n開始爬取 {board} 看板")
         scraper = MopttScraper(board)

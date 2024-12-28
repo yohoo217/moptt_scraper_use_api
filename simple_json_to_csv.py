@@ -1,3 +1,6 @@
+# 可配置的設定
+MAX_CHARS_PER_CELL = 32000  # CSV 單元格最大字符數
+
 import json
 import csv
 import sys
@@ -18,7 +21,7 @@ def clean_text(text):
     text = text.replace(',', '；')
     return text
 
-def convert_to_simple_csv(input_file, output_file=None, max_chars_per_cell=32000):
+def convert_to_simple_csv(input_file, output_file=None, max_chars_per_cell=MAX_CHARS_PER_CELL):
     """將 JSON 資料轉換為簡單的 CSV 格式，留言整合在同一個欄位中"""
     try:
         # 讀取 JSON 檔案
@@ -53,7 +56,7 @@ def convert_to_simple_csv(input_file, output_file=None, max_chars_per_cell=32000
                     time_str = ''
                 
                 # 處理文章內容，包含溢出處理
-                full_content = clean_text(item.get('description', ''))
+                full_content = clean_text(item.get('content', ''))
                 if len(full_content) > max_chars_per_cell:
                     content = full_content[:max_chars_per_cell]
                     content_overflow = full_content[max_chars_per_cell:]
@@ -135,7 +138,7 @@ def convert_to_simple_csv(input_file, output_file=None, max_chars_per_cell=32000
         print(f"錯誤：{str(e)}")
         return False
 
-def convert_all_json_files(max_chars_per_cell=32000):
+def convert_all_json_files(max_chars_per_cell=MAX_CHARS_PER_CELL):
     """轉換目錄下所有的 JSON 檔案為 CSV 格式"""
     json_files = glob.glob('*.json')
     if not json_files:

@@ -1,6 +1,6 @@
 # 可配置的設定
-# BOARD_NAMES = ["HatePolitics"]
-BOARD_NAMES = ["HatePolitics", "Beauty", "Lifeismoney", "KoreaStar", "Japandrama", "MakeUp", "marvel"]
+BOARD_NAMES = ["KoreaStar", "LoL"]
+# BOARD_NAMES = ["Baseball","Gossiping", "Stock", "NBA", "Lol", "HatePolitics", "Beauty", "Lifeismoney", "KoreaStar", "sex", "Japandrama", "MakeUp", "marvel"]
 API_KEY = 'cMIS1Icr95gnR2U19hxO2K7r6mYQ96vp'
 BASE_URL = "https://moptt.azurewebsites.net/api/v2/hotpost"
 
@@ -9,6 +9,7 @@ import json
 import time
 import os
 from urllib.parse import quote
+from config import POST_FIELDS
 
 class MopttScraper:
     def __init__(self, board_name):
@@ -55,17 +56,24 @@ class MopttScraper:
             if 'posts' in data:
                 filtered_posts = []
                 for post in data['posts']:
+                    # 檢查是否至少有一個時間欄位
+                    timestamp = post.get('timestamp', '')
+                    accepted_date = post.get('acceptedDate', '')
+                    if not timestamp and not accepted_date:
+                        print(f"警告：文章缺少時間資訊 (ID: {post.get('_id', 'unknown')})")
+                        continue
+
+                    # 使用 timestamp 或 acceptedDate 作為時間判斷
+                    post_time = timestamp if timestamp else accepted_date
+                    
                     filtered_post = {
                         '_id': post['_id'],  # 保留用於去重
-                        'title': post['title'],
-                        'timestamp': post['timestamp'],
-                        'url': post['url'],
-                        'hits': post['hits'],
-                        'acceptedDate': post['acceptedDate']
+                        '_post_time': post_time  # 內部使用，不會輸出
                     }
-                    # 如果有編號，也保留下來
-                    if 'number' in post:
-                        filtered_post['number'] = post['number']
+                    # 根據設定檔決定要保留哪些欄位
+                    for field, include in POST_FIELDS.items():
+                        if include and field in post:
+                            filtered_post[field] = post[field]
                     filtered_posts.append(filtered_post)
                 data['posts'] = filtered_posts
             
@@ -94,18 +102,21 @@ class MopttScraper:
                 break
 
             new_posts = []
-            dec_2023_count = sum(1 for post in self.all_posts if post.get('timestamp', '').startswith('2023-12'))
+            dec_2023_count = sum(1 for post in self.all_posts if post.get('_post_time', '').startswith('2023-12'))
             
             for post in data['posts']:
                 # 檢查是否已經找到足夠的2023年12月文章
-                timestamp = post.get('timestamp', '')
-                if timestamp.startswith('2023-12'):
+                post_time = post.get('_post_time', '')
+                if post_time.startswith('2023-12'):
                     dec_2023_count += 1
                     if dec_2023_count >= 5:
                         print("\n已找到5篇2023年12月的文章，停止爬取")
                         if post['_id'] not in existing_ids:
                             post['number'] = current_number
                             current_number += 1
+                            # 移除內部使用的時間欄位
+                            if '_post_time' in post:
+                                del post['_post_time']
                             new_posts.append(post)
                         self.all_posts.extend(new_posts)
                         self.save_posts_to_json()
@@ -114,6 +125,9 @@ class MopttScraper:
                 if post['_id'] not in existing_ids:
                     post['number'] = current_number  # 添加編號
                     current_number += 1
+                    # 移除內部使用的時間欄位
+                    if '_post_time' in post:
+                        del post['_post_time']
                     new_posts.append(post)
                     existing_ids.add(post['_id'])
 
@@ -122,7 +136,7 @@ class MopttScraper:
                 total_new_posts += len(new_posts)
 
             # 檢查是否有下一頁
-            if 'nextPage' in data and 'skip' in data['nextPage']:
+            if data.get('nextPage') and isinstance(data['nextPage'], dict) and 'skip' in data['nextPage']:
                 page_param = json.dumps({"skip": data['nextPage']['skip']})
                 # time.sleep(0.5)  # 避免請求過於頻繁
             else:

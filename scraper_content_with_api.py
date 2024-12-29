@@ -1,8 +1,7 @@
 # 可配置的設定
-BOARD_NAMES = ["HatePolitics"]
-# BOARD_NAMES = ["HatePolitics", "Beauty", "Lifeismoney", "KoreaStar", "Japandrama", "MakeUp", "marvel"]
+BOARD_NAMES = ["Baseball", "Gossiping", "Stock", "NBA", "C_Chat", "LoL", "Japandrama", "Makeup", "marvel", "BabyMother", "KoreaStar"]
+# BOARD_NAMES = ["HatePolitics", "Beauty", "Lifeismoney", "KoreaStar", "Japandrama", "MakeUp", "marvel", "BabyMother"]
 API_KEY = 'cMIS1Icr95gnR2U19hxO2K7r6mYQ96vp'  # API金鑰
-
 BASE_URL = "https://moptt.tw/ptt/"
 MAX_RETRIES = 3  # 最大重試次數
 RETRY_DELAY = 1  # 重試延遲秒數
@@ -15,6 +14,7 @@ import os
 import time
 from urllib.parse import urlparse, unquote
 import urllib3
+from config import COMMENT_FIELDS
 
 # 關閉 InsecureRequestWarning 警告
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -60,24 +60,34 @@ class CommentScraper:
 
                 comments = data['comments']
                 
-                # 提取所需的資料，使用 get 方法安全地取得資料
-                comments_data = {
-                    'total_comments': comments.get('total', 0),
-                    'like_count': comments.get('like', 0),
-                    'dislike_count': comments.get('dislike', 0),
-                    'neutral_count': comments.get('neutral', 0),
-                    'content': data.get('content', ''),  # 添加文章內容
-                    'comments': []
-                }
+                # 提取所需的資料，使用設定檔控制輸出欄位
+                comments_data = {}
                 
-                # 提取每個留言的標籤和內容
+                # 添加統計資料
+                if COMMENT_FIELDS.get('total_comments'):
+                    comments_data['total_comments'] = comments.get('total', 0)
+                if COMMENT_FIELDS.get('like_count'):
+                    comments_data['like_count'] = comments.get('like', 0)
+                if COMMENT_FIELDS.get('dislike_count'):
+                    comments_data['dislike_count'] = comments.get('dislike', 0)
+                if COMMENT_FIELDS.get('neutral_count'):
+                    comments_data['neutral_count'] = comments.get('neutral', 0)
+                
+                # 添加文章內容
+                if COMMENT_FIELDS.get('content'):
+                    comments_data['content'] = data.get('content', '')
+                
+                # 提取每個留言的資料
                 if isinstance(comments.get('items', []), list):
+                    comments_data['comments'] = []
                     for comment in comments['items']:
                         if isinstance(comment, dict):
-                            comments_data['comments'].append({
-                                'tag': comment.get('tag', ''),
-                                'content': comment.get('content', '')
-                            })
+                            comment_item = {}
+                            if COMMENT_FIELDS.get('tag'):
+                                comment_item['tag'] = comment.get('tag', '')
+                            if COMMENT_FIELDS.get('content'):
+                                comment_item['content'] = comment.get('content', '')
+                            comments_data['comments'].append(comment_item)
                 
                 return comments_data
                 

@@ -37,7 +37,7 @@ class MopttScraper:
         """儲存文章資料到JSON檔案"""
         with open(self.json_file, 'w', encoding='utf-8') as f:
             json.dump(self.all_posts, f, ensure_ascii=False, indent=2)
-        print(f"\r已儲存 {len(self.all_posts)} 篇文章至 {self.json_file}")
+        print(f"\r已儲存 {len(self.all_posts)} 篇文章至 {self.json_file}", end="")
 
     def fetch_posts(self, page_param=None):
         """獲取指定頁面的文章"""
@@ -110,7 +110,7 @@ class MopttScraper:
                 if post_time.startswith('2023-12'):
                     dec_2023_count += 1
                     if dec_2023_count >= 5:
-                        print("\n已找到5篇2023年12月的文章，停止爬取")
+                        print("\r已找到5篇2023年12月的文章，停止爬取", end="")
                         if post['_id'] not in existing_ids:
                             post['number'] = current_number
                             current_number += 1
@@ -148,12 +148,12 @@ class MopttScraper:
 
         # 最後儲存一次
         self.save_posts_to_json()
-        print(f"\n爬取完成！總共新增 {total_new_posts} 篇文章")
+        print(f"\r爬取完成！總共新增 {total_new_posts} 篇文章", end="\n")
         return self.all_posts
 
 if __name__ == "__main__":
     # 可以設定要爬取的看板名稱
     for board in BOARD_NAMES:
-        print(f"\n開始爬取 {board} 看板")
+        print(f"\r開始爬取 {board} 看板", end="")
         scraper = MopttScraper(board)
         scraper.scrape()

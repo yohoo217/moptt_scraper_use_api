@@ -12,6 +12,7 @@ venv/
 # Data files
 *.csv
 moptt_*.json
+*.json
 
 # Credentials
 token.pickle
